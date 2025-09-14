@@ -136,6 +136,16 @@
                     </select>
                 </div>
 
+                <div id="locationField">
+                    <label for="location" class="block form-label">Location</label>
+                    <select id="location" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus">
+                        <option value="" disabled selected>Select a location</option>
+                        <option value="Bejai">Bejai</option>
+                        <option value="Kadri">Kadri</option>
+                        <option value="Falnir">Falnir</option>
+                    </select>
+                </div>
+
                 <div>
                     <label for="totalAmount" class="block form-label">Total Amount (₹) *</label>
                     <input type="number" id="totalAmount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" min="0" required>
@@ -172,7 +182,7 @@
                 </div>
 
                 <div id="actionButtons" class="hidden space-y-4">
-                    <button onclick="shareWhatsApp()" class="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors">
+                    <button onclick="shareWhatsAppText()" class="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors">
                         📱 Share on WhatsApp
                     </button>
                     <button onclick="downloadPDF()" class="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors">
@@ -184,6 +194,13 @@
     </div>
 
     <script>
+        // Map of location to their Google Maps URL
+        const locationToUrlMap = {
+            "Bejai": "https://google.com/maps?gs_lcrp=EgZjaHJvbWUqDwgBEC4YDRivARjHARiABDIGCAAQRRg5Mg8IARAuGA0YrwEYxwEYgAQyCggCEAAYBRgNGB4yCggDEAAYCBgNGB4yCggEEAAYCBgNGB4yCggFEAAYCBgNGB4yCggGEAAYCBgNGB4yCggHEAAYCBgNGB4yCggIEAAYCBgNGB7SAQk0MzM4ajBqMTWoAgiwAgHxBWosa8GspRn1&um=1&ie=UTF-8&fb=1&gl=in&sa=X&geocode=KR2JMT3jW6M7MTc63kCEH8Af&daddr=Aikya+Appartment,+Bejai+New+Rd,+behind+mcf+colony,+near+Raj+home+layouts,+Bejai,+Mangaluru,+Karnataka+575004",
+            "Kadri": "", // Add your Kadri Google Maps link here
+            "Falnir": "" // Add your Falnir Google Maps link here
+        };
+
         // Set minimum date to today
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
@@ -229,13 +246,28 @@
             const checkInDate = document.getElementById('checkInDate').value;
             const checkOutDate = document.getElementById('checkOutDate').value;
             const property = document.getElementById('property');
+            const location = document.getElementById('location').value;
             const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
             const gstRequired = document.getElementById('gstRequired').checked;
             const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
             const pendingAmount = parseFloat(document.getElementById('pendingAmount').value) || 0;
+            const selectedProperty = property.value;
 
-            if (!customerName || !phoneNumber || !email || !checkInDate || !checkOutDate || !property.value || !totalAmount) {
-                alert('Please fill all required fields');
+            if (!customerName || !phoneNumber || !email || !checkInDate || !checkOutDate || !selectedProperty || !totalAmount) {
+                // Use a modal or a div to show the message instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.innerHTML = `
+                    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                            <h3 class="text-xl font-semibold mb-4 text-red-600">Error</h3>
+                            <p class="text-gray-700 mb-6">Please fill all required fields.</p>
+                            <button onclick="this.parentElement.parentElement.remove()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(messageBox);
                 return;
             }
 
@@ -245,6 +277,9 @@
             
             const gstAmount = gstRequired ? totalAmount * 0.18 : 0;
             const finalAmount = totalAmount + gstAmount;
+
+            const locationUrl = locationToUrlMap[location];
+            const locationHtml = location ? `<p><strong>Location:</strong> <a href="${locationUrl}" target="_blank" class="text-blue-600 underline">${location}</a></p>` : '';
 
             const quotationHTML = `
                 <div class="border-b-2 border-red-800 pb-6 mb-6">
@@ -272,7 +307,8 @@
                     <div>
                         <h3 class="text-lg font-semibold text-gray-800 mb-3">Booking Details</h3>
                         <div class="space-y-2 text-sm">
-                            <p><strong>Property:</strong> ${property.value}</p>
+                            <p><strong>Property:</strong> ${selectedProperty}</p>
+                            ${locationHtml}
                             <p><strong>Check-in:</strong> ${formatDate(checkInDate)}</p>
                             <p><strong>Check-out:</strong> ${formatDate(checkOutDate)}</p>
                             <p><strong>Duration:</strong> ${nights} night${nights > 1 ? 's' : ''}</p>
@@ -358,74 +394,11 @@
             });
         }
 
-        async function shareWhatsApp() {
-            const quotationElement = document.getElementById('quotationPreview');
-            const customerName = document.getElementById('customerName').value;
-            const phoneNumber = document.getElementById('phoneNumber').value;
-            
-            try {
-                // Create canvas from quotation preview
-                const canvas = await html2canvas(quotationElement, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    width: quotationElement.offsetWidth,
-                    height: quotationElement.offsetHeight
-                });
-                
-                // Convert to blob
-                canvas.toBlob(async (blob) => {
-                    try {
-                        // Create a temporary download link for the image
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `Quotation_${customerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
-                        
-                        // Trigger download
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        // Clean up
-                        URL.revokeObjectURL(url);
-                        
-                        // Show instructions to user
-                        setTimeout(() => {
-                            const message = `Hi ${customerName}! 👋
-
-Here's your quotation for ${document.getElementById('property').value}.
-
-Please find the detailed quotation image downloaded to your device. You can now share this image directly on WhatsApp.
-
-For any queries, contact us:
-📞 +91-XXXXX-XXXXX
-📧 info@aikyahomestay.com
-
-Thank you for choosing Aikya Homestay! 🏠✨`;
-
-                            const encodedMessage = encodeURIComponent(message);
-                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                            window.open(whatsappUrl, '_blank');
-                        }, 1000);
-                        
-                    } catch (error) {
-                        console.error('Error creating download:', error);
-                        // Fallback to text message
-                        shareWhatsAppText();
-                    }
-                }, 'image/png', 0.95);
-                
-            } catch (error) {
-                console.error('Error capturing quotation:', error);
-                alert('Error capturing quotation image. Please try downloading PDF instead.');
-            }
-        }
-
         function shareWhatsAppText() {
             const customerName = document.getElementById('customerName').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
             const property = document.getElementById('property').value;
+            const location = document.getElementById('location').value;
             const checkInDate = formatDate(document.getElementById('checkInDate').value);
             const checkOutDate = formatDate(document.getElementById('checkOutDate').value);
             const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
@@ -436,43 +409,51 @@ Thank you for choosing Aikya Homestay! 🏠✨`;
             const gstAmount = gstRequired ? totalAmount * 0.18 : 0;
             const finalAmount = totalAmount + gstAmount;
 
-            let message = `🏠 *AIKYA HOMESTAY - QUOTATION*
+            const locationUrl = locationToUrlMap[location];
 
-👤 *Customer:* ${customerName}
-📱 *Phone:* ${phoneNumber}
+            let message = `*AIKYA HOMESTAY - QUOTATION*
 
-🏡 *Property:* ${property}
-📅 *Check-in:* ${checkInDate}
-📅 *Check-out:* ${checkOutDate}
+*Customer:* ${customerName}
+*Phone:* ${phoneNumber}
 
-💰 *Base Amount:* ₹${totalAmount.toLocaleString('en-IN')}`;
+*Property:* ${property}`;
 
-            if (gstRequired) {
-                message += `
-🧾 *GST (18%):* ₹${gstAmount.toLocaleString('en-IN')}
-💰 *Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
-            } else {
-                message += `
-💰 *Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
+            // Check if a location is selected before adding it
+            if (location) {
+                message += `\n*Location:* ${location}`;
             }
 
-            message += `
-✅ *Advance Paid:* ₹${advancePaid.toLocaleString('en-IN')}
-⏳ *Pending Amount:* ₹${pendingAmount.toLocaleString('en-IN')}
+            // Check if a URL exists for the selected location before adding it
+            if (locationUrl) {
+                message += `\n${locationUrl}`;
+            }
 
-✨ *Amenities:* Free WiFi, AC, Kitchen, 24/7 Support
+            message += `\n\n*Check-in:* ${checkInDate}
+*Check-out:* ${checkOutDate}
 
-📞 Contact: +91-XXXXX-XXXXX
-📧 Email: info@aikyahomestay.com
+*Base Amount:* ₹${totalAmount.toLocaleString('en-IN')}`;
 
-Thank you for choosing Aikya Homestay! 🙏`;
+            if (gstRequired) {
+                message += `\n*GST (18%):* ₹${gstAmount.toLocaleString('en-IN')}
+*Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
+            } else {
+                message += `\n*Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
+            }
+
+            message += `\n*Advance Paid:* ₹${advancePaid.toLocaleString('en-IN')}
+*Pending Amount:* ₹${pendingAmount.toLocaleString('en-IN')}
+
+*Amenities:* Free WiFi, AC, Kitchen, 24/7 Support
+
+*Contact:* +91-XXXXX-XXXXX
+*Email:* info@aikyahomestay.com
+
+Thank you for choosing Aikya Homestay!`;
 
             const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
         }
-
-
 
         async function downloadPDF() {
             const { jsPDF } = window.jspdf;
@@ -511,9 +492,22 @@ Thank you for choosing Aikya Homestay! 🙏`;
                 pdf.save(fileName);
             } catch (error) {
                 console.error('Error generating PDF:', error);
-                alert('Error generating PDF. Please try again.');
+                // Use a modal or a div to show the message instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.innerHTML = `
+                    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                            <h3 class="text-xl font-semibold mb-4 text-red-600">Error</h3>
+                            <p class="text-gray-700 mb-6">Error generating PDF. Please try again.</p>
+                            <button onclick="this.parentElement.parentElement.remove()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(messageBox);
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f23c57e4dc3faf',t:'MTc1Nzg3NzU2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
