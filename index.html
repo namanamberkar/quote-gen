@@ -61,7 +61,12 @@
         .property-rates {
             display: none;
         }
-
+        
+        .no-print {
+            /* This class will hide the element when printing */
+            display: none;
+        }
+        
         @media print {
             body * {
                 visibility: hidden;
@@ -136,7 +141,7 @@
                     </select>
                 </div>
 
-                <div id="locationField">
+                <div>
                     <label for="location" class="block form-label">Location</label>
                     <select id="location" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus">
                         <option value="" disabled selected>Select a location</option>
@@ -144,6 +149,16 @@
                         <option value="Kadri">Kadri</option>
                         <option value="Falnir">Falnir</option>
                     </select>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="propertyDescription" class="block form-label mb-0">Property Description</label>
+                        <button onclick="generateDescription()" id="generateBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-full text-xs font-semibold hover:bg-gray-300 transition-colors">
+                            ✨ Generate
+                        </button>
+                    </div>
+                    <textarea id="propertyDescription" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus h-32" placeholder="Describe the property here..."></textarea>
                 </div>
 
                 <div>
@@ -200,6 +215,17 @@
             "Kadri": "https://www.google.com/maps/place/Kadri+Park/@12.8797968,74.8465103,17z/data=!3m1!4b1!4m6!3m5!1s0x3ba35a09c2a38181:0x2287f3b8f15d90ed!8m2!3d12.8797968!4d74.8490852!16s%2Fg%2F125p392z2?entry=ttu", 
             "Falnir": "https://www.google.com/maps/place/Falnir,+Mangaluru,+Karnataka/@12.8687258,74.8368532,16z/data=!3m1!4b1!4m6!3m5!1s0x3ba35930b8e8f801:0x39a038f972b9a769!8m2!3d12.8688467!4d74.8398468!16s%2Fg%2F122c601z?entry=ttu"
         };
+        
+        // This is a placeholder. You must use `__firebase_config` when using Firestore.
+        // It is defined in the Canvas environment.
+        const firebaseConfig = {
+             apiKey: "",
+             authDomain: "",
+             projectId: "",
+             storageBucket: "",
+             messagingSenderId: "",
+             appId: ""
+         };
 
         // Set minimum date to today
         document.addEventListener('DOMContentLoaded', () => {
@@ -239,6 +265,61 @@
             document.getElementById('pendingAmount').value = Math.max(0, pendingAmount);
         }
 
+        async function generateDescription() {
+            const property = document.getElementById('property').value;
+            const location = document.getElementById('location').value;
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (!property || !location) {
+                const messageBox = document.createElement('div');
+                messageBox.innerHTML = `
+                    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                            <h3 class="text-xl font-semibold mb-4 text-red-600">Error</h3>
+                            <p class="text-gray-700 mb-6">Please select a property and location first.</p>
+                            <button onclick="this.parentElement.parentElement.remove()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(messageBox);
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = 'Loading...';
+
+            const userPrompt = `As a professional copywriter for a premium homestay, write a compelling, concise, 2-3 sentence description for our ${property} in ${location}. Focus on creating a welcoming and inviting tone. Highlight that the property includes amenities like free WiFi, a fully equipped kitchen, and 24/7 support.`;
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+            };
+
+            let responseText = '';
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    responseText = result.candidates[0].content.parts[0].text;
+                } else {
+                    responseText = 'Could not generate a description at this time. Please try again.';
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                responseText = 'An error occurred while generating the description.';
+            } finally {
+                document.getElementById('propertyDescription').value = responseText;
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '✨ Generate';
+            }
+        }
+
         function generateQuotation() {
             const customerName = document.getElementById('customerName').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
@@ -247,6 +328,7 @@
             const checkOutDate = document.getElementById('checkOutDate').value;
             const property = document.getElementById('property');
             const location = document.getElementById('location').value;
+            const propertyDescription = document.getElementById('propertyDescription').value;
             const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
             const gstRequired = document.getElementById('gstRequired').checked;
             const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
@@ -279,7 +361,8 @@
             const finalAmount = totalAmount + gstAmount;
 
             const locationUrl = locationToUrlMap[location];
-            const locationHtml = location ? `<p><strong>Location:</strong> <a href="${locationUrl}" target="_blank" class="text-blue-600 underline">${location}</a></p>` : '';
+            const locationHtml = location ? `<p><strong>Location:</strong> <a href="${locationUrl}" target="_blank" class="text-blue-600 underline">${location}</a><span class="no-print"><br><span class="text-blue-600 break-words">${locationUrl}</span></span></p>` : '';
+            const descriptionHtml = propertyDescription ? `<p class="mt-4 text-gray-700">${propertyDescription}</p>` : '';
 
             const quotationHTML = `
                 <div class="border-b-2 border-red-800 pb-6 mb-6">
@@ -315,6 +398,7 @@
                         </div>
                     </div>
                 </div>
+                ${descriptionHtml}
 
                 <div class="bg-gray-50 p-6 rounded-lg mb-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Pricing Breakdown</h3>
@@ -401,6 +485,7 @@
             const location = document.getElementById('location').value;
             const checkInDate = formatDate(document.getElementById('checkInDate').value);
             const checkOutDate = formatDate(document.getElementById('checkOutDate').value);
+            const propertyDescription = document.getElementById('propertyDescription').value;
             const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
             const gstRequired = document.getElementById('gstRequired').checked;
             const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
@@ -441,9 +526,13 @@
             }
 
             message += `\n*Advance Paid:* ₹${advancePaid.toLocaleString('en-IN')}
-*Pending Amount:* ₹${pendingAmount.toLocaleString('en-IN')}
+*Pending Amount:* ₹${pendingAmount.toLocaleString('en-IN')}`;
 
-*Amenities:* Free WiFi, AC, Kitchen, 24/7 Support
+            if (propertyDescription) {
+                message += `\n\n*Description:*\n${propertyDescription}`;
+            }
+
+            message += `\n\n*Amenities:* Free WiFi, AC, Kitchen, 24/7 Support
 
 *Contact:* +91-XXXXX-XXXXX
 *Email:* info@aikyahomestay.com
@@ -459,17 +548,22 @@ Thank you for choosing Aikya Homestay!`;
             const { jsPDF } = window.jspdf;
             const quotationElement = document.getElementById('quotationPreview');
             
-            // To ensure the PDF is well-formatted for A4, we'll temporarily set a fixed width and padding
-            // on the element before capturing it as a canvas. This creates a consistent layout.
+            // Store original styles to revert later
             const originalWidth = quotationElement.style.width;
             const originalPadding = quotationElement.style.padding;
-            
-            quotationElement.style.width = '800px';
-            quotationElement.style.padding = '24px'; // Adjusted for better A4 fit
+            const originalPosition = quotationElement.style.position;
+            const originalMargin = quotationElement.style.margin;
+
+            // Temporarily set a fixed width and padding to ensure a predictable A4-like layout
+            // A4 is 210mm wide, which is roughly 794px at 96 DPI.
+            quotationElement.style.width = '794px';
+            quotationElement.style.padding = '40px'; 
+            quotationElement.style.margin = '0';
+            quotationElement.style.position = 'absolute';
             
             try {
                 const canvas = await html2canvas(quotationElement, {
-                    scale: 2,
+                    scale: 2, 
                     useCORS: true,
                     backgroundColor: '#ffffff'
                 });
@@ -477,12 +571,14 @@ Thank you for choosing Aikya Homestay!`;
                 // Restore original styles immediately after creating the canvas
                 quotationElement.style.width = originalWidth;
                 quotationElement.style.padding = originalPadding;
+                quotationElement.style.margin = originalMargin;
+                quotationElement.style.position = originalPosition;
                 
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 
                 const imgWidth = 210;
-                const pageHeight = 295;
+                const pageHeight = 297; 
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
                 let heightLeft = imgHeight;
                 
@@ -522,6 +618,8 @@ Thank you for choosing Aikya Homestay!`;
                 // Restore original styles in case of an error
                 quotationElement.style.width = originalWidth;
                 quotationElement.style.padding = originalPadding;
+                quotationElement.style.margin = originalMargin;
+                quotationElement.style.position = originalPosition;
             }
         }
     </script>
