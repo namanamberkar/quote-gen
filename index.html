@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homestay Quotation Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .glass-effect {
+            background: rgba(255, 240, 196, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(140, 16, 7, 0.2);
+        }
+
+        .card-shadow {
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-focus {
+            transition: all 0.3s ease;
+        }
+
+        .input-focus:focus {
+            outline: none;
+            border-color: #8C1007;
+            box-shadow: 0 0 0 3px rgba(140, 16, 7, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #660B05 0%, #3E0703 50%, #8C1007 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(140, 16, 7, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, #FFF0C4 0%, #8C1007 30%, #660B05 70%, #3E0703 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .quotation-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .property-rates {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .quotation-preview, .quotation-preview * {
+                visibility: visible;
+            }
+            .quotation-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-6">
+    <div class="glass-effect p-10 rounded-2xl card-shadow max-w-6xl w-full">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Homestay Quotation Generator</h1>
+            <p class="text-gray-600">Create professional quotations instantly</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Customer Details</h2>
+                
+                <div>
+                    <label for="customerName" class="block form-label">Customer Name *</label>
+                    <input type="text" id="customerName" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                </div>
+
+                <div>
+                    <label for="phoneNumber" class="block form-label">Phone Number *</label>
+                    <input type="tel" id="phoneNumber" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                </div>
+
+                <div>
+                    <label for="email" class="block form-label">Email Address *</label>
+                    <input type="email" id="email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                </div>
+
+                <div>
+                    <label for="checkInDate" class="block form-label">Check-in Date *</label>
+                    <input type="date" id="checkInDate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                </div>
+
+                <div>
+                    <label for="checkOutDate" class="block form-label">Check-out Date *</label>
+                    <input type="date" id="checkOutDate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                </div>
+
+                <div>
+                    <label for="property" class="block form-label">Property *</label>
+                    <select id="property" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" required>
+                        <option value="" disabled selected>Select a property</option>
+                        <option value="1BHK - 401">1BHK - 401</option>
+                        <option value="1BHK - 402">1BHK - 402</option>
+                        <option value="2BHK - 101">2BHK - 101</option>
+                        <option value="2BHK - 102">2BHK - 102</option>
+                        <option value="2BHK - 201">2BHK - 201</option>
+                        <option value="2BHK - 202">2BHK - 202</option>
+                        <option value="2BHK - 302">2BHK - 302</option>
+                        <option value="2BHK - G1">2BHK - G1</option>
+                        <option value="3BHK - 101">3BHK - 101</option>
+                        <option value="1BHK - Villa">1BHK - Villa</option>
+                        <option value="2BHK - Villa">2BHK - Villa</option>
+                        <option value="2BHK - Palace">2BHK - Palace</option>
+                        <option value="2BHK - Falnir">2BHK - Falnir</option>
+                        <option value="3BHK - Nikunj">3BHK - Nikunj</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="totalAmount" class="block form-label">Total Amount (₹) *</label>
+                    <input type="number" id="totalAmount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" min="0" required>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="gstRequired" class="w-5 h-5 text-red-600 border-2 border-gray-300 rounded focus:ring-red-500">
+                    <label for="gstRequired" class="form-label mb-0">Add 18% GST</label>
+                </div>
+
+                <div>
+                    <label for="advancePaid" class="block form-label">Advance Paid (₹)</label>
+                    <input type="number" id="advancePaid" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus" min="0" value="0">
+                </div>
+
+                <div>
+                    <label for="pendingAmount" class="block form-label">Pending Amount (₹)</label>
+                    <input type="number" id="pendingAmount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl input-focus bg-gray-50" readonly>
+                </div>
+
+                <div class="flex gap-4 mt-8">
+                    <button onclick="generateQuotation()" class="btn-primary flex-1 px-6 py-3 text-white font-semibold rounded-xl">
+                        Generate Quotation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Quotation Preview</h2>
+                
+                <div id="quotationPreview" class="quotation-preview hidden">
+                    <!-- Quotation content will be generated here -->
+                </div>
+
+                <div id="actionButtons" class="hidden space-y-4">
+                    <button onclick="shareWhatsApp()" class="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors">
+                        📱 Share on WhatsApp
+                    </button>
+                    <button onclick="downloadPDF()" class="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors">
+                        📄 Download as PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('checkInDate').setAttribute('min', today);
+            document.getElementById('checkOutDate').setAttribute('min', today);
+        });
+
+        // Update checkout minimum date when checkin changes
+        document.getElementById('checkInDate').addEventListener('change', function() {
+            const checkInDate = this.value;
+            const checkOutInput = document.getElementById('checkOutDate');
+            if (checkInDate) {
+                checkOutInput.setAttribute('min', checkInDate);
+                if (checkOutInput.value && checkOutInput.value < checkInDate) {
+                    checkOutInput.value = '';
+                }
+            }
+            calculateAmount();
+        });
+
+        document.getElementById('totalAmount').addEventListener('input', calculateAmount);
+        document.getElementById('gstRequired').addEventListener('change', calculateAmount);
+        document.getElementById('advancePaid').addEventListener('input', calculateAmount);
+
+        function calculateAmount() {
+            const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+            const gstRequired = document.getElementById('gstRequired').checked;
+            const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
+
+            let finalAmount = totalAmount;
+            if (gstRequired) {
+                finalAmount = totalAmount + (totalAmount * 0.18);
+            }
+
+            const pendingAmount = finalAmount - advancePaid;
+            document.getElementById('pendingAmount').value = Math.max(0, pendingAmount);
+        }
+
+        function generateQuotation() {
+            const customerName = document.getElementById('customerName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const email = document.getElementById('email').value;
+            const checkInDate = document.getElementById('checkInDate').value;
+            const checkOutDate = document.getElementById('checkOutDate').value;
+            const property = document.getElementById('property');
+            const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+            const gstRequired = document.getElementById('gstRequired').checked;
+            const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
+            const pendingAmount = parseFloat(document.getElementById('pendingAmount').value) || 0;
+
+            if (!customerName || !phoneNumber || !email || !checkInDate || !checkOutDate || !property.value || !totalAmount) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            const checkIn = new Date(checkInDate);
+            const checkOut = new Date(checkOutDate);
+            const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+            
+            const gstAmount = gstRequired ? totalAmount * 0.18 : 0;
+            const finalAmount = totalAmount + gstAmount;
+
+            const quotationHTML = `
+                <div class="border-b-2 border-red-800 pb-6 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold text-red-800">AIKYA HOMESTAY</h1>
+                            <p class="text-gray-600">Premium Accommodation Services</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-600">Quotation #${generateQuotationNumber()}</p>
+                            <p class="text-sm text-gray-600">Date: ${new Date().toLocaleDateString('en-IN')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Customer Details</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>Name:</strong> ${customerName}</p>
+                            <p><strong>Phone:</strong> ${phoneNumber}</p>
+                            <p><strong>Email:</strong> ${email}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Booking Details</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>Property:</strong> ${property.value}</p>
+                            <p><strong>Check-in:</strong> ${formatDate(checkInDate)}</p>
+                            <p><strong>Check-out:</strong> ${formatDate(checkOutDate)}</p>
+                            <p><strong>Duration:</strong> ${nights} night${nights > 1 ? 's' : ''}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Pricing Breakdown</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Duration</span>
+                            <span>${nights} night${nights > 1 ? 's' : ''}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Base Amount</span>
+                            <span>₹${totalAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                        ${gstRequired ? `
+                        <div class="flex justify-between">
+                            <span>GST (18%)</span>
+                            <span>₹${gstAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between font-semibold">
+                            <span>Total Amount (incl. GST)</span>
+                            <span>₹${finalAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                        ` : `
+                        <div class="border-t pt-3 flex justify-between font-semibold">
+                            <span>Total Amount</span>
+                            <span>₹${finalAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                        `}
+                        <div class="flex justify-between text-green-600">
+                            <span>Advance Paid</span>
+                            <span>₹${advancePaid.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between font-bold text-lg text-red-600">
+                            <span>Pending Amount</span>
+                            <span>₹${pendingAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h4 class="font-semibold text-blue-800 mb-2">Amenities Included:</h4>
+                    <ul class="text-sm text-blue-700 grid grid-cols-2 gap-1">
+                        <li>• Free WiFi</li>
+                        <li>• Air Conditioning</li>
+                        <li>• Kitchen Facilities</li>
+                        <li>• 24/7 Support</li>
+                        <li>• Parking Available</li>
+                        <li>• Clean Linens</li>
+                    </ul>
+                </div>
+
+                <div class="text-center text-sm text-gray-600 border-t pt-4">
+                    <p class="mb-2"><strong>Contact Us:</strong> +91-XXXXX-XXXXX | info@aikyahomestay.com</p>
+                    <p>Thank you for choosing Aikya Homestay. We look forward to hosting you!</p>
+                </div>
+            `;
+
+            document.getElementById('quotationPreview').innerHTML = quotationHTML;
+            document.getElementById('quotationPreview').classList.remove('hidden');
+            document.getElementById('actionButtons').classList.remove('hidden');
+        }
+
+        function generateQuotationNumber() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000);
+            return `QUO-${year}${month}${day}-${random}`;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function shareWhatsApp() {
+            const customerName = document.getElementById('customerName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const property = document.getElementById('property').value;
+            const checkInDate = formatDate(document.getElementById('checkInDate').value);
+            const checkOutDate = formatDate(document.getElementById('checkOutDate').value);
+            const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+            const gstRequired = document.getElementById('gstRequired').checked;
+            const advancePaid = parseFloat(document.getElementById('advancePaid').value) || 0;
+            const pendingAmount = parseFloat(document.getElementById('pendingAmount').value) || 0;
+            
+            const gstAmount = gstRequired ? totalAmount * 0.18 : 0;
+            const finalAmount = totalAmount + gstAmount;
+
+            let message = `🏠 *AIKYA HOMESTAY - QUOTATION*
+
+👤 *Customer:* ${customerName}
+📱 *Phone:* ${phoneNumber}
+
+🏡 *Property:* ${property}
+📅 *Check-in:* ${checkInDate}
+📅 *Check-out:* ${checkOutDate}
+
+💰 *Base Amount:* ₹${totalAmount.toLocaleString('en-IN')}`;
+
+            if (gstRequired) {
+                message += `
+🧾 *GST (18%):* ₹${gstAmount.toLocaleString('en-IN')}
+💰 *Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
+            } else {
+                message += `
+💰 *Total Amount:* ₹${finalAmount.toLocaleString('en-IN')}`;
+            }
+
+            message += `
+✅ *Advance Paid:* ₹${advancePaid.toLocaleString('en-IN')}
+⏳ *Pending Amount:* ₹${pendingAmount.toLocaleString('en-IN')}
+
+✨ *Amenities:* Free WiFi, AC, Kitchen, 24/7 Support
+
+📞 Contact: +91-XXXXX-XXXXX
+📧 Email: info@aikyahomestay.com
+
+Thank you for choosing Aikya Homestay! 🙏`;
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const quotationElement = document.getElementById('quotationPreview');
+            
+            try {
+                const canvas = await html2canvas(quotationElement, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                const customerName = document.getElementById('customerName').value;
+                const fileName = `Quotation_${customerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+                
+                pdf.save(fileName);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f231a1a4a7060c',t:'MTc1Nzg3NzEyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
