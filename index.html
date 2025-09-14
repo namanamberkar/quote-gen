@@ -358,7 +358,71 @@
             });
         }
 
-        function shareWhatsApp() {
+        async function shareWhatsApp() {
+            const quotationElement = document.getElementById('quotationPreview');
+            const customerName = document.getElementById('customerName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            
+            try {
+                // Create canvas from quotation preview
+                const canvas = await html2canvas(quotationElement, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: quotationElement.offsetWidth,
+                    height: quotationElement.offsetHeight
+                });
+                
+                // Convert to blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // Create a temporary download link for the image
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `Quotation_${customerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
+                        
+                        // Trigger download
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up
+                        URL.revokeObjectURL(url);
+                        
+                        // Show instructions to user
+                        setTimeout(() => {
+                            const message = `Hi ${customerName}! 👋
+
+Here's your quotation for ${document.getElementById('property').value}.
+
+Please find the detailed quotation image downloaded to your device. You can now share this image directly on WhatsApp.
+
+For any queries, contact us:
+📞 +91-XXXXX-XXXXX
+📧 info@aikyahomestay.com
+
+Thank you for choosing Aikya Homestay! 🏠✨`;
+
+                            const encodedMessage = encodeURIComponent(message);
+                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                            window.open(whatsappUrl, '_blank');
+                        }, 1000);
+                        
+                    } catch (error) {
+                        console.error('Error creating download:', error);
+                        // Fallback to text message
+                        shareWhatsAppText();
+                    }
+                }, 'image/png', 0.95);
+                
+            } catch (error) {
+                console.error('Error capturing quotation:', error);
+                alert('Error capturing quotation image. Please try downloading PDF instead.');
+            }
+        }
+
+        function shareWhatsAppText() {
             const customerName = document.getElementById('customerName').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
             const property = document.getElementById('property').value;
@@ -404,7 +468,7 @@
 Thank you for choosing Aikya Homestay! 🙏`;
 
             const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
         }
 
@@ -451,5 +515,5 @@ Thank you for choosing Aikya Homestay! 🙏`;
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f231a1a4a7060c',t:'MTc1Nzg3NzEyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f23c57e4dc3faf',t:'MTc1Nzg3NzU2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
